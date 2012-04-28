@@ -34,4 +34,10 @@
         android:layout_height="wrap_content"
         android:text="Sphero, stop!" />
 
+    <Button
+        android:id="@+id/connect_mindwave"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="Mindcontrol!"
+       	android:onClick="connectMindwave" />
 </LinearLayout>
