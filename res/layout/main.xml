@@ -12,9 +12,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="Heading"/>
+        android:text="Meditation"/>
     <SeekBar
-        android:id="@+id/heading_control"
+        android:id="@+id/meditation_control"
         android:progressDrawable="@drawable/progress_style"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -25,9 +25,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="Speed"/>
+        android:text="Attention"/>
     <SeekBar
-        android:id="@+id/speed_control"
+        android:id="@+id/attention_control"
         android:progressDrawable="@drawable/progress_style"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

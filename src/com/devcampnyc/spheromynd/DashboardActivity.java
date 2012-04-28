@@ -16,6 +16,7 @@ import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
+import com.devcampnyc.spheromynd.Translator.SpheroSettings;
 import com.neurosky.thinkgear.TGDevice;
 
 public class DashboardActivity extends Activity {
@@ -24,8 +25,8 @@ public class DashboardActivity extends Activity {
 
   protected static final String TAG = "MindSphero";
 
-  private SeekBar mHeadingControl;
-  private SeekBar mSpeedControl;
+  private SeekBar mMeditationControl;
+  private SeekBar mAttentionControl;
   private Button mStopButton;
   
   TGDevice tgDevice;
@@ -33,15 +34,18 @@ public class DashboardActivity extends Activity {
   final boolean rawEnabled = false;
   
   private Robot mRobot;
+  private MindwaveState mState;
   
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.main);
     
-    mHeadingControl = (SeekBar) findViewById(R.id.heading_control);
-    mSpeedControl = (SeekBar) findViewById(R.id.speed_control);
+    mMeditationControl = (SeekBar) findViewById(R.id.meditation_control);
+    mAttentionControl = (SeekBar) findViewById(R.id.attention_control);
     mStopButton = (Button) findViewById(R.id.stop_button);
+    
+    mState = new MindwaveState();
     
     bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     
@@ -82,8 +86,8 @@ public class DashboardActivity extends Activity {
   }
   
   private void enableControls() {
-    mHeadingControl.setOnSeekBarChangeListener(seekBarControlChanged);
-    mSpeedControl.setOnSeekBarChangeListener(seekBarControlChanged);
+    mMeditationControl.setOnSeekBarChangeListener(seekBarControlChanged);
+    mAttentionControl.setOnSeekBarChangeListener(seekBarControlChanged);
 
     mStopButton.setOnClickListener(new View.OnClickListener() {
       
@@ -95,10 +99,16 @@ public class DashboardActivity extends Activity {
   }
   
   private void updateRobotWithControlValues() {
-    float heading = (mHeadingControl.getProgress() / 100.0f) * 360; // heading is float between 0 and 360
-    float speed = mSpeedControl.getProgress() / 100.0f; // speed is float between 0 and 1  
-    
-    RollCommand.sendCommand(mRobot, heading, speed);
+    if (mState.isSetUp()) {
+      SpheroSettings settings = new Translator().getSpheroSettings(
+          mState.meditation, mState.attention, mState.blink);
+      
+
+      RollCommand.sendCommand(mRobot, settings.getHeading(), settings.getSpeed());
+      
+      // reset state
+      mState = new MindwaveState();
+    }
   }
   
   private SeekBar.OnSeekBarChangeListener seekBarControlChanged = new SeekBar.OnSeekBarChangeListener() {
@@ -151,14 +161,23 @@ public class DashboardActivity extends Activity {
           Log.d(TAG, "Heart rate: " + msg.arg1 + "\n");
           break;
         case TGDevice.MSG_ATTENTION :
-          mSpeedControl.setProgress(msg.arg1);
-          Log.d(TAG, "Attention: " + msg.arg1 + "\n");
+          mAttentionControl.setProgress(msg.arg1);
+          mState.attention = msg.arg1;
+          updateRobotWithControlValues();
+
+          Log.d(TAG, "Attention: " + msg.arg1 + "\n"); 
           break;
         case TGDevice.MSG_MEDITATION :
-          Log.d(TAG, "Meditation: " + msg.arg1 + "\n");
+          mMeditationControl.setProgress(msg.arg1);
+          mState.meditation = msg.arg1;
+          updateRobotWithControlValues();
 
+          Log.d(TAG, "Meditation: " + msg.arg1 + "\n");
           break;
         case TGDevice.MSG_BLINK :
+          mState.blink = msg.arg1;
+          updateRobotWithControlValues();
+          
           Log.d(TAG, "Blink: " + msg.arg1 + "\n");
           break;
         case TGDevice.MSG_RAW_COUNT :
@@ -173,10 +192,23 @@ public class DashboardActivity extends Activity {
     }
   };
 
-
   public void connectMindwave(View view) {
     if (tgDevice.getState() != TGDevice.STATE_CONNECTING && tgDevice.getState() != TGDevice.STATE_CONNECTED)
       tgDevice.connect(rawEnabled);
+  }
+
+  class MindwaveState {
+    
+    int meditation = -1;
+    int attention = -1;
+    int blink = -1;
+    
+    boolean isSetUp() {
+      return meditation != -1 &&
+          attention!= -1 &&
+          blink != -1;
+    }
+
   }
   
 }
