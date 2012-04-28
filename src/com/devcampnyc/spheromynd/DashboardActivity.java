@@ -34,6 +34,7 @@ public class DashboardActivity extends Activity {
   final boolean rawEnabled = false;
   
   private Robot mRobot;
+  private ServerClient mServerClient;
   private MindwaveState mState;
   
   @Override
@@ -45,6 +46,7 @@ public class DashboardActivity extends Activity {
     mAttentionControl = (SeekBar) findViewById(R.id.attention_control);
     mStopButton = (Button) findViewById(R.id.stop_button);
     
+    mServerClient = new ServerClient();
     mState = new MindwaveState();
     
     bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -105,6 +107,8 @@ public class DashboardActivity extends Activity {
       
 
       RollCommand.sendCommand(mRobot, settings.getHeading(), settings.getSpeed());
+      
+      mServerClient.sendMindwaveState(mState);
       
       // reset state
       mState = new MindwaveState();
