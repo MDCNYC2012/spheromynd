@@ -2,7 +2,6 @@ package com.devcampnyc.spheromynd;
 
 import java.util.Stack;
 
-
 public class Translator {
 	
 	public final class SpheroSettings
@@ -10,6 +9,7 @@ public class Translator {
 		private float _heading;
 		private float _speed;
 		private int _change_cnt = 0;
+		public final float circle = 360.0f;
 		
 		public SpheroSettings (float heading, float speed) {
 			_heading = heading;
@@ -26,6 +26,11 @@ public class Translator {
 			return _speed;
 		}
 		
+		public int getChangeCnt()
+		{
+			return _change_cnt;
+		}
+		
 		public void setHeading(float heading)
 		{
 			_heading = heading;
@@ -34,8 +39,23 @@ public class Translator {
 		
 		public void adjustHeading(float heading_chg)
 		{
-			float h = _heading + heading_chg;
-			setHeading((h > 360)? 360 - h: h);
+			float h = _heading + (heading_chg + getChangeFactor());
+			setHeading((h > circle)? Math.abs(circle - h): h);
+		}
+		
+		private float getChangeFactor()
+		{
+			float cfc = _change_cnt / circle;
+			int cf = 0;
+			
+			if(cfc <= .1)
+			{
+				cf = _change_cnt;
+			} else if(cfc < 1) {
+				cf = (int)circle / 10;
+			}
+			
+			return cf;
 		}
 		
 		public void setSpeed(float speed)
