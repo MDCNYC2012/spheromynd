@@ -8,8 +8,9 @@
     android:gravity="center">
 
     <com.devcampnyc.spheromynd.view.HeadingControlView
-        android:layout_width="170dp"
-        android:layout_height="170dp"
+        android:id="@+id/headingcontrol"
+        android:layout_width="130dp"
+        android:layout_height="130dp"
         />
     
     <TextView

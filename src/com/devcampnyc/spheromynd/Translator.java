@@ -42,7 +42,7 @@ public class Translator {
 		
 		if (blink > base_blink)
 		{
-			heading = 90;
+			heading = heading + 90;
 		}
 		
 		return new SpheroSettings(heading, speed);

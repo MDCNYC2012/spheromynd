@@ -17,6 +17,7 @@ import android.widget.SeekBar;
 import android.widget.Toast;
 
 import com.devcampnyc.spheromynd.Translator.SpheroSettings;
+import com.devcampnyc.spheromynd.view.HeadingControlView;
 import com.neurosky.thinkgear.TGDevice;
 
 public class DashboardActivity extends Activity {
@@ -28,13 +29,13 @@ public class DashboardActivity extends Activity {
   private SeekBar mMeditationControl;
   private SeekBar mAttentionControl;
   private Button mStopButton;
+  private HeadingControlView mHeadingControl;
   
   TGDevice tgDevice;
   BluetoothAdapter bluetoothAdapter;
   final boolean rawEnabled = false;
   
   private Robot mRobot;
-  private ServerClient mServerClient;
   private MindwaveState mState;
   
   @Override
@@ -46,7 +47,8 @@ public class DashboardActivity extends Activity {
     mAttentionControl = (SeekBar) findViewById(R.id.attention_control);
     mStopButton = (Button) findViewById(R.id.stop_button);
     
-    mServerClient = new ServerClient();
+    mHeadingControl = (HeadingControlView) findViewById(R.id.headingcontrol);
+    
     mState = new MindwaveState();
     
     bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -105,11 +107,10 @@ public class DashboardActivity extends Activity {
       SpheroSettings settings = new Translator().getSpheroSettings(
           mState.meditation, mState.attention, mState.blink);
       
-
       RollCommand.sendCommand(mRobot, settings.getHeading(), settings.getSpeed());
       
-      mServerClient.sendMindwaveState(mState);
-      
+      mHeadingControl.setHeading((int) RollCommand.getCurrentHeading());
+
       // reset state
       mState = new MindwaveState();
     }

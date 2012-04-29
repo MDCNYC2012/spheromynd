@@ -45,7 +45,7 @@ public class HeadingControlView extends View  {
   
   @Override protected void onDraw(Canvas canvas) {
     super.onDraw(canvas);
-
+    
     int height = getMeasuredHeight();
     int width = getMeasuredWidth();
 
@@ -59,10 +59,16 @@ public class HeadingControlView extends View  {
     RectF boundingBox = new RectF(center.x - radius, center.y - radius, center.x + radius, center.y + radius);
     
     Path circlePath = new Path();
-    circlePath.arcTo(boundingBox, -88 + mHeading, 358 + mHeading);
+    
+    int circleStart = -88 + mHeading;
+    
+    circlePath.arcTo(boundingBox, circleStart, 358);
 
     Path needlePath = new Path();
-    needlePath.arcTo(boundingBox, -94 + mHeading, 8 + mHeading);
+    
+    int needleStart = (-94 + mHeading);
+    
+    needlePath.arcTo(boundingBox, needleStart, 8);
     
     canvas.drawPath(circlePath, mTickerPaint);
     canvas.drawPath(needlePath, mNeedlePaint);
@@ -70,6 +76,7 @@ public class HeadingControlView extends View  {
   
   public void setHeading(int degrees) {
     mHeading = degrees;
+    this.invalidate();
   }
   
 
