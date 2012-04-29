@@ -33,30 +33,36 @@ public class ServerClient {
     mClient = new DefaultHttpClient();
   }
   
-  public void sendMindwaveState(MindwaveState state) {
+  public void sendMindwaveState(final MindwaveState state) {
    
-    try {
-      JSONObject json = new JSONObject();
-      json.put("attention", state.attention);
-      json.put("meditation", state.meditation);
-      json.put("blink", state.blink);
+    new Thread(new Runnable() {
+      
+      @Override
+      public void run() {
+        try {
+          JSONObject json = new JSONObject();
+          json.put("attention", state.attention);
+          json.put("meditation", state.meditation);
+          json.put("blink", state.blink);
 
-      HttpPost request = new HttpPost(MINDSTATE_URL);
-      request.setEntity(new StringEntity(json.toString()));
+          HttpPost request = new HttpPost(MINDSTATE_URL);
+          request.setEntity(new StringEntity(json.toString()));
 
-      Log.d(TAG, "Sending to [" + MINDSTATE_URL + "]: " + json.toString());
+          Log.d(TAG, "Sending to [" + MINDSTATE_URL + "]: " + json.toString());
 
-      HttpResponse response = mClient.execute(request);
+          HttpResponse response = mClient.execute(request);
 
-      if (response.getStatusLine().getStatusCode() != 200) {
-        Log.w(TAG, "Could not send state to server");
+          if (response.getStatusLine().getStatusCode() != 200) {
+            Log.w(TAG, "Could not send state to server");
+          }
+        } catch (JSONException e) {
+          Log.e(TAG, "Could not create mindwave state json", e);
+        }
+        catch (IOException e) {
+          Log.e(TAG, "Could not connect to server", e);
+        }
       }
-    } catch (JSONException e) {
-      Log.e(TAG, "Could not create mindwave state json", e);
-    }
-    catch (IOException e) {
-      Log.e(TAG, "Could not connect to server", e);
-    }
+    }).start();
   }
   
 }
