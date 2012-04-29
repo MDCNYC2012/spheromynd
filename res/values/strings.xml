@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">spheromynd</string>
+    <string name="sphero_start">Sphero, start!</string>
+    <string name="sphero_stop">Sphero, stop!</string>
 </resources>

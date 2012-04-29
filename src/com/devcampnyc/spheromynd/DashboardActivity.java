@@ -6,13 +6,15 @@ import orbotix.robot.base.RobotProvider;
 import orbotix.robot.base.RollCommand;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
@@ -28,31 +30,40 @@ public class DashboardActivity extends Activity {
 
   private SeekBar mMeditationControl;
   private SeekBar mAttentionControl;
-  private Button mStopButton;
+  private SeekBar mSpeedControl;
   private HeadingControlView mHeadingControl;
-  
+
   TGDevice tgDevice;
   BluetoothAdapter bluetoothAdapter;
   final boolean rawEnabled = false;
-  
+
   private Robot mRobot;
   private MindwaveState mState;
+
+  private Translator mTranslator = new Translator();
+
+  private PowerManager pm;
+
+  private WakeLock mWakeLock;
+
+  private boolean isRunning = true;
   
-  @Override
-  public void onCreate(Bundle savedInstanceState) {
+  @Override public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.main);
-    
+
+    pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+
     mMeditationControl = (SeekBar) findViewById(R.id.meditation_control);
     mAttentionControl = (SeekBar) findViewById(R.id.attention_control);
-    mStopButton = (Button) findViewById(R.id.stop_button);
-    
+    mSpeedControl = (SeekBar) findViewById(R.id.speedcontrol);
+
     mHeadingControl = (HeadingControlView) findViewById(R.id.headingcontrol);
-    
+
     mState = new MindwaveState();
-    
+
     bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-    
+
     if (bluetoothAdapter == null) {
       // Alert user that Bluetooth is not available
       Toast.makeText(this, "Bluetooth not available", Toast.LENGTH_LONG).show();
@@ -62,15 +73,50 @@ public class DashboardActivity extends Activity {
       /* create the TGDevice */
       tgDevice = new TGDevice(bluetoothAdapter, handler);
     }
-    
+
+  }
+
+  @Override protected void onResume() {
+    super.onResume();
+    mWakeLock = pm.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE, "My Tag");
+    mWakeLock.acquire();
   }
   
-  @Override
-  protected void onStart() {
+  @Override protected void onPause() {
+    super.onPause();
+    mWakeLock.release();
+  }
+  
+  public void pulse() {
+    new Thread(new Runnable() {
+      
+      @Override public void run() {
+        while(isRunning) {
+          updateRobotWithControlValues();
+          
+          Log.d(TAG, "pulse");
+          try {
+            Thread.sleep(10);
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+          RollCommand.sendStop(mRobot);
+
+          try {
+            Thread.sleep(1000);
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    }).start();
+  }
+  
+  @Override protected void onStart() {
     super.onStart();
-    
-    Intent intent = new Intent(this, StartupActivity.class);  
-    startActivityForResult(intent, STARTUP_ACTIVITY);  
+
+    Intent intent = new Intent(this, StartupActivity.class);
+    startActivityForResult(intent, STARTUP_ACTIVITY);
   }
 
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -80,56 +126,52 @@ public class DashboardActivity extends Activity {
       if (resultCode == RESULT_OK) {
         String robotId = data.getStringExtra(StartupActivity.EXTRA_ROBOT_ID);
         mRobot = RobotProvider.getDefaultProvider().findRobot(robotId);
-        
+
         enableControls();
-      }
-      else {
+
+        pulse();
+      } else {
         // could not connect to any Sphero
       }
     }
   }
-  
+
   private void enableControls() {
     mMeditationControl.setOnSeekBarChangeListener(seekBarControlChanged);
     mAttentionControl.setOnSeekBarChangeListener(seekBarControlChanged);
-
-    mStopButton.setOnClickListener(new View.OnClickListener() {
-      
-      @Override
-      public void onClick(View v) {
-          RollCommand.sendStop(mRobot);
-      }
-    });
+    mSpeedControl.setOnSeekBarChangeListener(seekBarControlChanged);
   }
-  
+
   private void updateRobotWithControlValues() {
     if (mState.isSetUp()) {
-      SpheroSettings settings = new Translator().getSpheroSettings(
-          mState.meditation, mState.attention, mState.blink);
-      
+      SpheroSettings settings = mTranslator.updateSpheroSettings(mState.meditation, mState.attention, mState.blink);
+
+      Log.d(TAG, "settings.getHeading(): " + settings.getHeading() + " settings.getSpeed(): " + settings.getSpeed());
       RollCommand.sendCommand(mRobot, settings.getHeading(), settings.getSpeed());
       
-      mHeadingControl.setHeading((int) RollCommand.getCurrentHeading());
+      runOnUiThread(new Runnable() {
+        @Override public void run() {
+          mHeadingControl.setHeading((int) RollCommand.getCurrentHeading());
+        }
+      });
 
-      // reset state
-      mState = new MindwaveState();
     }
   }
-  
+
   private SeekBar.OnSeekBarChangeListener seekBarControlChanged = new SeekBar.OnSeekBarChangeListener() {
-    
-    @Override
-    public void onStopTrackingTouch(SeekBar seekBar) {}
-    
-    @Override
-    public void onStartTrackingTouch(SeekBar seekBar) {}
-    
-    @Override
-    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-      updateRobotWithControlValues();
+
+    @Override public void onStopTrackingTouch(SeekBar seekBar) {
+    }
+
+    @Override public void onStartTrackingTouch(SeekBar seekBar) {
+    }
+
+    @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+      if (seekBar.getId() == R.id.speedcontrol) {
+        mTranslator.setSpeed(progress / 100.0f);
+      }
     }
   };
-  
 
   private final Handler handler = new Handler() {
     @Override public void handleMessage(Message msg) {
@@ -158,7 +200,7 @@ public class DashboardActivity extends Activity {
 
           break;
         case TGDevice.MSG_POOR_SIGNAL :
-          Log.d(TAG, "PoorSignal: " + msg.arg1 + "\n");
+//          Log.d(TAG, "PoorSignal: " + msg.arg1 + "\n");
           break;
         case TGDevice.MSG_RAW_DATA :
           break;
@@ -168,22 +210,16 @@ public class DashboardActivity extends Activity {
         case TGDevice.MSG_ATTENTION :
           mAttentionControl.setProgress(msg.arg1);
           mState.attention = msg.arg1;
-          updateRobotWithControlValues();
 
-          Log.d(TAG, "Attention: " + msg.arg1 + "\n"); 
+//          Log.d(TAG, "Attention: " + msg.arg1 + "\n");
           break;
         case TGDevice.MSG_MEDITATION :
           mMeditationControl.setProgress(msg.arg1);
           mState.meditation = msg.arg1;
-          updateRobotWithControlValues();
 
-          Log.d(TAG, "Meditation: " + msg.arg1 + "\n");
+//          Log.d(TAG, "Meditation: " + msg.arg1 + "\n");
           break;
         case TGDevice.MSG_BLINK :
-          mState.blink = msg.arg1;
-          updateRobotWithControlValues();
-          
-          Log.d(TAG, "Blink: " + msg.arg1 + "\n");
           break;
         case TGDevice.MSG_RAW_COUNT :
           break;
@@ -203,17 +239,15 @@ public class DashboardActivity extends Activity {
   }
 
   class MindwaveState {
-    
+
     int meditation = -1;
     int attention = -1;
     int blink = -1;
-    
+
     boolean isSetUp() {
-      return meditation != -1 &&
-          attention!= -1 &&
-          blink != -1;
+      return meditation != -1 && attention != -1;
     }
 
   }
-  
+
 }
