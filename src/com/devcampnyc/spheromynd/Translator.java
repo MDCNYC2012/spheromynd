@@ -1,6 +1,7 @@
 package com.devcampnyc.spheromynd;
 
-import android.os.AsyncTask;
+import java.util.Stack;
+
 
 public class Translator {
 	
@@ -8,6 +9,7 @@ public class Translator {
 	{
 		private float _heading;
 		private float _speed;
+		private int _change_cnt = 0;
 		
 		public SpheroSettings (float heading, float speed) {
 			_heading = heading;
@@ -23,46 +25,95 @@ public class Translator {
 		{
 			return _speed;
 		}
+		
+		public void setHeading(float heading)
+		{
+			_heading = heading;
+			_change_cnt += 1;
+		}
+		
+		public void adjustHeading(float heading_chg)
+		{
+			float h = _heading + heading_chg;
+			setHeading((h > 360)? 360 - h: h);
+		}
+		
+		public void setSpeed(float speed)
+		{
+			_speed = speed;
+		}
+		
 	}
 	
-	public SpheroSettings getSpheroSettings (int meditation, int attention, 
+	private SpheroSettings _settings;
+	
+	private Stack<Integer> _meditation = new Stack<Integer>();
+	private Stack<Integer> _attention = new Stack<Integer>();
+	
+	public int base_blink = 50;
+	public float base_speed = .5f;
+	public float base_heading_chg = 120.0f;
+	
+	public Translator()
+	{
+		_settings = new SpheroSettings(0.0f, 0.0f);
+	}
+	
+	public SpheroSettings updateSpheroSettings (int meditation, int attention, 
 			int blink)
 	{
-		float heading = 0;
-		float speed = 0;
 		
-		int base_meditation = 25;
-		int base_attention = 25;
-		int base_blink = 50;
+		_meditation.push(meditation);
+		_attention.push(attention);
 		
-		if (meditation > base_meditation || attention > base_attention)
+		int avg_med = 0;
+		int avg_att = 0;
+		int cnt = 0;
+		final int moving_avg = 3;
+		
+		for(int i = _meditation.size() - 1; i >= 0; i--)
 		{
-			speed = (meditation / 200) + (attention / 200);
+			avg_med = _meditation.get(i);
+			cnt += 1;
+			if(cnt == moving_avg){ break; }
 		}
 		
-		if (blink > base_blink)
+		avg_med = avg_med / cnt;
+		cnt = 0;
+		
+		for(int i = _attention.size() - 1; i >= 0; i--)
 		{
-			heading = 90;
+			avg_att = _attention.get(i);
+			cnt += 1;
+			if(cnt == moving_avg){ break; }
 		}
 		
-		return new SpheroSettings(heading, speed);
+		avg_att = avg_att / cnt;
+		
+		_settings.adjustHeading(calcHeadingChg(avg_med, avg_att));
+		
+		/*if (blinked(blink))
+		{
+			_settings.setSpeed (!(_settings.getSpeed() > 0)? base_speed: 0);
+		}*/
+		
+		return _settings;
 		
 	}
 	
-	/*
-	private void spheroTalk(String command)
+	protected boolean blinked (int blink)
 	{
-		
+		return (blink > base_blink);
 	}
 	
-	public void spheroRead(String data)
+	private float calcHeadingChg(int meditation, int attention)
 	{
+		float heading_adj = 10.0f;
 		
+		float madj = (meditation / 100.0f) * (heading_adj / 2.0f);
+		float aadj = (attention / 100.0f) * (heading_adj / 2.0f);
+		
+		return base_heading_chg - (heading_adj - (madj + aadj));
 	}
 	
-	private void recordSpheroData(String data)
-	{
-				
-	}
-	*/
 }
