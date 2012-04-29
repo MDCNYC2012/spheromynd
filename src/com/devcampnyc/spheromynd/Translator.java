@@ -74,6 +74,11 @@ public class Translator {
 			return _heading_skip;
 		}
 		
+		public boolean needSkip()
+		{
+			return _need_skip;
+		}
+		
 		public void setSpeed(float speed)
 		{
 			_speed = speed;
