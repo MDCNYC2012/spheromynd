@@ -137,6 +137,11 @@ public class Translator {
 		
 	}
 	
+	public void setSpeed(float i) {
+	  _settings.setSpeed(i);
+	}
+	
+	
 	protected boolean blinked (int blink)
 	{
 		return (blink > base_blink);
@@ -151,5 +156,4 @@ public class Translator {
 		
 		return base_heading_chg - (heading_adj - aadj); //(madj + aadj));
 	}
-	
 }
