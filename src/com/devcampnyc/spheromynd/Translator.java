@@ -7,9 +7,11 @@ public class Translator {
 	public final class SpheroSettings
 	{
 		private float _heading;
+		private float _heading_skip;
 		private float _speed;
 		private int _change_cnt = 0;
 		public final float circle = 360.0f;
+		private boolean _need_skip;
 		
 		public SpheroSettings (float heading, float speed) {
 			_heading = heading;
@@ -39,8 +41,17 @@ public class Translator {
 		
 		public void adjustHeading(float heading_chg)
 		{
-			float h = _heading + (heading_chg + getChangeFactor());
-			setHeading((h > circle)? Math.abs(circle - h): h);
+			float h = _heading + heading_chg; // + getChangeFactor());
+			
+			if(h > circle){
+				setHeading(0);
+				_heading_skip = Math.abs(circle - h);
+				_need_skip = true;
+			} else {
+				setHeading(h);
+				_heading_skip = 0.0f;
+				_need_skip = false;
+			}
 		}
 		
 		private float getChangeFactor()
@@ -56,6 +67,11 @@ public class Translator {
 			}
 			
 			return cf;
+		}
+		
+		public float getHeadingSkip()
+		{
+			return _heading_skip;
 		}
 		
 		public void setSpeed(float speed)
@@ -130,10 +146,10 @@ public class Translator {
 	{
 		float heading_adj = 10.0f;
 		
-		float madj = (meditation / 100.0f) * (heading_adj / 2.0f);
-		float aadj = (attention / 100.0f) * (heading_adj / 2.0f);
+		//float madj = (meditation / 100.0f) * (heading_adj / 2.0f);
+		float aadj = (attention / 100.0f) * (heading_adj); // / 2.0f);
 		
-		return base_heading_chg - (heading_adj - (madj + aadj));
+		return base_heading_chg - (heading_adj - aadj); //(madj + aadj));
 	}
 	
 }
