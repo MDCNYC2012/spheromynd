@@ -107,9 +107,9 @@ public class DashboardActivity extends Activity {
       
 
       RollCommand.sendCommand(mRobot, settings.getHeading(), settings.getSpeed());
-      
+
       mServerClient.sendMindwaveState(mState);
-      
+
       // reset state
       mState = new MindwaveState();
     }
