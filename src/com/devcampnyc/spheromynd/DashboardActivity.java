@@ -96,14 +96,14 @@ public class DashboardActivity extends Activity {
           
           Log.d(TAG, "pulse");
           try {
-            Thread.sleep(10);
+            Thread.sleep(120);
           } catch (InterruptedException e) {
             e.printStackTrace();
           }
           RollCommand.sendStop(mRobot);
 
           try {
-            Thread.sleep(1000);
+            Thread.sleep(1200);
           } catch (InterruptedException e) {
             e.printStackTrace();
           }
